@@ -8,7 +8,7 @@
 
   - FastAPI
 
-  - All of the above
+  - All of the above ✔
 
 - **Question 2:** _What's the main difference between Django, Flask and FastAPI in terms of performance and speed?_
 
