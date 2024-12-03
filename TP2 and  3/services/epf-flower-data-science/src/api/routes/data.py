@@ -1,11 +1,12 @@
 from fastapi.responses import JSONResponse
-from src.services.data import Dataset, get_dataset_infos, open_configs_file, write_configs_file, dump_configs_file
+from src.services.data import Dataset, get_dataset_infos, open_configs_file, write_configs_file, dump_configs_file, load_iris_dataset
 from fastapi import APIRouter, HTTPException, status
 import pandas as pd
 from requests.exceptions import HTTPError
 import requests
 import zipfile
 import io
+from pathlib import Path
 
 router = APIRouter()
 
@@ -113,3 +114,25 @@ async def delete_dataset(dataset_id: str):
         status_code=status.HTTP_200_OK,
         content={"message": f"Dataset {dataset_id} was successfully deleted"}
     )
+
+@router.get("/load-dataset/{dataset_name}")
+async def load_dataset(dataset_name: str):
+    """Load the Iris dataset file as a DataFrame and return it as JSON.
+    
+     Args:
+        dataset_name (str): The name of the file to load
+
+    Returns:
+        200: The file was successfully loaded
+
+    Raises:
+        404: The file was not found
+
+    
+    """
+    try:
+        df = load_iris_dataset(dataset_name)
+        return JSONResponse(content=df.to_dict(orient="records"))
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"The file {dataset_name}.csv does not exist.")
+    

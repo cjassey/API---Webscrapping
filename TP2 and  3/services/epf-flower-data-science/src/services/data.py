@@ -96,13 +96,15 @@ def get_dataset_infos(dataset_id: str) -> Dataset:
             status_code=404, detail=f"Dataset not found in configuration file: {dataset_id}")
 
 
-def download_dataset(dataset_url: str, dataset_name: str) -> None:
-    """ Download a dataset from a URL and save it to the data folder """
-    try:
-        response = requests.get(dataset_url)
-        output_file = OUTPUT_FILE_PATH / f'{dataset_name}.zip'
-        with open(output_file, "wb") as file:
-            file.write(response.content)
-    except InvalidURL:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid URL: {dataset_url}")
+def load_iris_dataset(dataset_name: str) -> pd.DataFrame:
+    file_path =  f"src/data/{dataset_name}.csv"
+    print(file_path)
+    return pd.read_csv(f"{file_path}")
+    
+    
+def process_iris_dataset(df: pd.DataFrame) -> pd.DataFrame:
+    """Effectuer le traitement nécessaire sur le dataset Iris."""
+    # Exemple de traitement : suppression de la colonne 'Id'
+    df = df.drop(columns=['Id'])
+    # Ajouter d'autres traitements si nécessaire
+    return df
