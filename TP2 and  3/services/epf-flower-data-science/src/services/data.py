@@ -9,6 +9,7 @@ import json
 import validators
 import pandas as pd
 from requests.exceptions import HTTPError
+from sklearn.model_selection import train_test_split
 
 JSON_CONFIG_PATH = Path(__file__).parent.parent / "config/urls_config.json"
 OUTPUT_FILE_PATH = Path(__file__).parent.parent / "data"
@@ -96,15 +97,22 @@ def get_dataset_infos(dataset_id: str) -> Dataset:
             status_code=404, detail=f"Dataset not found in configuration file: {dataset_id}")
 
 
-def load_iris_dataset(dataset_name: str) -> pd.DataFrame:
+def load_dataset(dataset_name: str) -> pd.DataFrame:
     file_path =  f"src/data/{dataset_name}.csv"
     print(file_path)
     return pd.read_csv(f"{file_path}")
     
     
-def process_iris_dataset(df: pd.DataFrame) -> pd.DataFrame:
+def process_dataset(dataset_name : str) -> pd.DataFrame:
     """Effectuer le traitement nécessaire sur le dataset Iris."""
-    # Exemple de traitement : suppression de la colonne 'Id'
-    df = df.drop(columns=['Id'])
-    # Ajouter d'autres traitements si nécessaire
+    df = load_dataset(dataset_name)
+    # Enlever le préfixe 'Iris-' dans la colonne 'Species'
+    df['Species'] = df['Species'].str.replace('Iris-', '')
+    
     return df
+
+def split_dataset(dataset_name: str, test_size: float = 0.2):
+    """Diviser le dataset en ensembles d'entraînement et de test."""
+    df = process_dataset(dataset_name)
+    train_df, test_df = train_test_split(df, test_size=test_size, random_state=42)
+    return train_df, test_df

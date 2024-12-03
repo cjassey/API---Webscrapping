@@ -1,5 +1,5 @@
 from fastapi.responses import JSONResponse
-from src.services.data import Dataset, get_dataset_infos, open_configs_file, write_configs_file, dump_configs_file, load_iris_dataset
+from src.services.data import Dataset, get_dataset_infos, open_configs_file, write_configs_file, dump_configs_file, load_dataset, process_dataset, split_dataset
 from fastapi import APIRouter, HTTPException, status
 import pandas as pd
 from requests.exceptions import HTTPError
@@ -117,7 +117,7 @@ async def delete_dataset(dataset_id: str):
 
 @router.get("/load-dataset/{dataset_name}")
 async def load_dataset(dataset_name: str):
-    """Load the Iris dataset file as a DataFrame and return it as JSON.
+    """Load the dataset file as a DataFrame and return it as JSON.
     
      Args:
         dataset_name (str): The name of the file to load
@@ -131,8 +131,35 @@ async def load_dataset(dataset_name: str):
     
     """
     try:
-        df = load_iris_dataset(dataset_name)
+        df = load_dataset(dataset_name)
         return JSONResponse(content=df.to_dict(orient="records"))
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"The file {dataset_name}.csv does not exist.")
+    
+@router.get("/preprocess-dataset/{dataset_name}")
+async def preprocess_dataset(dataset_name: str):
+    """processe the dataset file as a DataFrame and return it as JSON.
+    
+     Args:
+        dataset_name (str): The name of the dataset to load and to process
+
+    Returns:
+        200: The dataset was successfully process
+
+    Raises:
+        404: The dataset was not found
+
+    
+    """
+    try:
+        df = process_dataset(dataset_name)
+        return JSONResponse(content=df.to_dict(orient="records"))
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"The file {dataset_name}.csv does not exist.")
+    
+@router.get("/split-dataset/{dataset_name}")
+async def split_iris_dataset_endpoint(dataset_name: str):
+    """Load, process, and split the Iris dataset into train and test sets, and return them as JSON."""
+    train_df, test_df = split_dataset(dataset_name)
+    return JSONResponse(content={"train": train_df.to_dict(orient="records"), "test": test_df.to_dict(orient="records")})
     
