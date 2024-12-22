@@ -218,6 +218,7 @@ async def predict(dataset_name: str):
         content={
             "predicted_labels": predicted_labels.tolist()
         }
+        
     )
 
 
