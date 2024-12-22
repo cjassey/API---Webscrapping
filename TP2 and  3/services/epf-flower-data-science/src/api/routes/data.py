@@ -1,5 +1,5 @@
 from fastapi.responses import JSONResponse
-from src.services.data import Dataset, get_dataset_infos, open_configs_file, write_configs_file, dump_configs_file, load_dataset, process_dataset, split_dataset
+from src.services.data import Dataset, get_dataset_infos, open_configs_file, write_configs_file, dump_configs_file, load_dataset, process_dataset, split_dataset, train_dataset, predict_iris
 from fastapi import APIRouter, HTTPException, status
 import pandas as pd
 from requests.exceptions import HTTPError
@@ -7,6 +7,7 @@ import requests
 import zipfile
 import io
 from pathlib import Path
+import json
 
 router = APIRouter()
 
@@ -159,7 +160,64 @@ async def preprocess_dataset(dataset_name: str):
     
 @router.get("/split-dataset/{dataset_name}")
 async def split_iris_dataset_endpoint(dataset_name: str):
-    """Load, process, and split the Iris dataset into train and test sets, and return them as JSON."""
-    train_df, test_df = split_dataset(dataset_name)
-    return JSONResponse(content={"train": train_df.to_dict(orient="records"), "test": test_df.to_dict(orient="records")})
+    """
+    Loads, processes, and splits a specified dataset into training (train) 
+    and testing (test) sets. Returns the splits in JSON format.
+
+    Arguments:
+    - dataset_name (str): The name of the dataset to load and split.
+
+    Returns:
+    - JSON containing two keys:
+      - "train": Training data as a list of dictionaries.
+      - "test": Testing data as a list of dictionaries.
+    """
+    X_train, X_test, y_train, y_test = split_dataset(dataset_name)
+    train_df = pd.concat([X_train, y_train], axis=1)
+    test_df = pd.concat([X_test, y_test], axis=1)
+
+    response_data = {
+        "train": train_df.to_dict(orient="records"),
+        "test": test_df.to_dict(orient="records")
+    }
+
+    return JSONResponse(content=json.dumps(response_data, default=str))
+
+
+@router.get("/train-iris-dataset/{dataset_name}")
+async def train_iris_dataset_endpoint(dataset_name: str):
+    """
+    Trains a model on a specified dataset and saves the model.
+
+    Arguments:
+    - dataset_name (str): The name of the dataset to use for training.
+
+    Returns:
+    - JSON containing a message confirming that the model was trained 
+      and saved successfully.
+    """
+    model = train_dataset(dataset_name)
+    return JSONResponse(content={"message": "Model trained and saved successfully."})
+
     
+
+@router.get('/predict/{dataset_name}')
+async def predict(dataset_name: str):
+    """
+    Predicts labels for a specified dataset using a pre-trained model.
+
+    Arguments:
+    - dataset_name (str): The name of the dataset to use for predictions.
+
+    Returns:
+    - JSON containing the predicted labels as a list.
+    """
+    predicted_labels = predict_iris(dataset_name="iris")
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "predicted_labels": predicted_labels.tolist()
+        }
+    )
+
+

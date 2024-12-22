@@ -7,12 +7,17 @@ import requests
 from pathlib import Path
 import json
 import validators
+import os
+import joblib
 import pandas as pd
 from requests.exceptions import HTTPError
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
 
 JSON_CONFIG_PATH = Path(__file__).parent.parent / "config/urls_config.json"
 OUTPUT_FILE_PATH = Path(__file__).parent.parent / "data"
+CONFIG_DIR = Path(__file__).parent.parent / "config"
+MODEL_DIR = Path(__file__).parent.parent / "models"
 
 
 class Dataset(BaseModel):
@@ -114,5 +119,41 @@ def process_dataset(dataset_name : str) -> pd.DataFrame:
 def split_dataset(dataset_name: str, test_size: float = 0.2):
     """Diviser le dataset en ensembles d'entraînement et de test."""
     df = process_dataset(dataset_name)
-    train_df, test_df = train_test_split(df, test_size=test_size, random_state=42)
-    return train_df, test_df
+    X = df.drop(columns="Species")
+    y = df["Species"]
+    X_train,X_test,y_train,y_test = train_test_split(X,y, test_size=test_size, random_state=42)
+    return X_train,X_test,y_train,y_test 
+
+def load_model_config(
+):
+    """ Load the model configuration file """
+    with open(CONFIG_DIR / "model_parameters.json") as file:
+        return json.load(file)
+    
+
+def train_dataset(dataset_name: str):
+    """Entraîner un modèle sur le dataset Iris et enregistrer le modèle."""
+    # Diviser le dataset en ensembles d'entraînement et de test
+    X_train,X_test,y_train,y_test = split_dataset(dataset_name)
+    
+    # Charger la configuration du modèle
+    config = load_model_config()
+    
+    # Créer et entraîner le modèle
+    model = RandomForestClassifier(**config)
+    model.fit(X_train, y_train)
+    
+    # Enregistrer le modèle dans le dossier src/models
+    model_path = os.path.join('src', 'models', 'iris_model.joblib')
+    joblib.dump(model, model_path)
+    
+    return model
+
+def predict_iris(dataset_name:str) -> list[str]:
+    """ Predict the species of an iris flower
+    """
+    X_train,X_test,y_train,y_test = split_dataset(dataset_name)
+    model = train_dataset(dataset_name)
+    model = joblib.load(MODEL_DIR / "iris_model.joblib")
+    y_pred = model.predict(X_test)
+    return y_pred
